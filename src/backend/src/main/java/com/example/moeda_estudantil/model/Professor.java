@@ -1,5 +1,6 @@
 package com.example.moeda_estudantil.model;
 
+import com.example.moeda_estudantil.exception.RegraNegocioException;
 import com.example.moeda_estudantil.model.enums.PerfilUsuario;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -48,5 +49,44 @@ public class Professor extends Usuario {
         this.departamento = departamento;
         this.instituicao = instituicao;
     }
-}
 
+    // ── Regras de saldo (GRASP: Especialista na Informação) ─────────────────
+
+    /**
+     * Adiciona moedas ao saldo. A quantidade deve ser maior que zero.
+     */
+    public void creditar(double quantidade) {
+        validarQuantidade(quantidade);
+        this.saldo = saldoAtual() + quantidade;
+    }
+
+    /**
+     * Retira moedas do saldo, recusando a operação quando o saldo não é suficiente.
+     */
+    public void debitar(double quantidade) {
+        validarQuantidade(quantidade);
+        if (!possuiSaldo(quantidade)) {
+            throw new RegraNegocioException(
+                    "Saldo insuficiente. Saldo atual: " + saldoAtual() +
+                    " moedas. Valor solicitado: " + quantidade + " moedas.");
+        }
+        this.saldo = saldoAtual() - quantidade;
+    }
+
+    /**
+     * Indica se o saldo cobre a quantidade informada.
+     */
+    public boolean possuiSaldo(double quantidade) {
+        return saldoAtual() >= quantidade;
+    }
+
+    private double saldoAtual() {
+        return this.saldo != null ? this.saldo : 0.0;
+    }
+
+    private static void validarQuantidade(double quantidade) {
+        if (quantidade <= 0) {
+            throw new RegraNegocioException("A quantidade de moedas deve ser maior que zero.");
+        }
+    }
+}
